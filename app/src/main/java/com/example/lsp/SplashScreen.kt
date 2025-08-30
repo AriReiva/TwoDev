@@ -69,92 +69,59 @@ fun SplashContent(onFinish: () -> Unit) {
     var startLogo by remember { mutableStateOf(false) }
     var fadeLogo by remember { mutableStateOf(false) }
     var mergeBalls by remember { mutableStateOf(false) }
-    var liftBalls by remember { mutableStateOf(false) }
     var expandBall by remember { mutableStateOf(false) }
 
-    // Logo muncul
+    // Logo
     val logoScale by animateFloatAsState(
         targetValue = if (startLogo) 1f else 0f,
-        animationSpec = tween(900, easing = OvershootEasing(2f)),
+        animationSpec = tween(800, easing = OvershootEasing(2f)),
         label = "logoScale"
     )
-
-    // Logo fade out
     val logoAlpha by animateFloatAsState(
         targetValue = if (fadeLogo) 0f else 1f,
-        animationSpec = tween(700),
+        animationSpec = tween(600),
         label = "logoAlpha"
     )
 
-    // Bounce awal
-    val infinite = rememberInfiniteTransition(label = "bounce")
-    val bounce by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = -25f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(500, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bounce"
-    )
-
-    // Offset horizontal → merge ke tengah
+    // Posisi bola kiri & kanan menuju tengah
     val offsetAnim by animateFloatAsState(
-        targetValue = if (mergeBalls) 0f else 50f,
-        animationSpec = tween(600, easing = EaseInOut),
+        targetValue = if (mergeBalls) 0f else 60f,
+        animationSpec = tween(900, easing = EaseInOut),
         label = "offsetAnim"
     )
 
-    // Naik ke atas setelah merge
-    val liftY by animateFloatAsState(
-        targetValue = if (liftBalls) -250f else 0f,
-        animationSpec = tween(700, easing = EaseInOut),
-        label = "liftY"
-    )
+//    // Scale kecil waktu merge → kasih efek “menyatu”
+//    val mergeScale by animateFloatAsState(
+//        targetValue = if (mergeBalls) 1.5f else 1f,
+//        animationSpec = tween(00, easing = EaseInOut),
+//        label = "mergeScale"
+//    )
 
-    // Bola expand (jadi background putih)
+    // Scale bola final ketika expand
     val bigBallScale by animateFloatAsState(
         targetValue = if (expandBall) 80f else 1f,
         animationSpec = tween(1500, easing = FastOutSlowInEasing),
         label = "bigBallScale"
     )
 
-    // scale bola saat merge
-    val mergeBallScale by animateFloatAsState(
-        targetValue = if (mergeBalls) 80f else 1f,
-        animationSpec = tween(1000, easing = FastOutSlowInEasing),
-        label = "mergeBallScale"
-    )
-
-
-    // Timeline animasi
+    // Timeline
     LaunchedEffect(Unit) {
         startLogo = true
-        delay(1400) // logo masuk
+        delay(1200)
         fadeLogo = true
-        delay(400) // logo fade
+        delay(600)
         mergeBalls = true
-        delay(1000) // kasih waktu merge scale animasi
-        liftBalls = true
-        delay(800)  // bola naik
+        delay(1000)
         expandBall = true
-        delay(2500) // bola expand nutup layar
+        delay(2000)
         onFinish()
     }
 
-
-    // Background transisi orange → putih
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                if (expandBall) {
-                    Brush.verticalGradient(listOf(Color.White, Color.White))
-                } else {
-                    Brush.linearGradient(
-                        listOf(Color(0xFFff7e5f), Color(0xFFfeb47b))
-                    )
-                }
+                Color(0xFFff7e5f)
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -168,44 +135,37 @@ fun SplashContent(onFinish: () -> Unit) {
                 .alpha(logoAlpha)
         )
 
-        // Bola animasi
+        // Bola
         if (!expandBall) {
             if (!mergeBalls) {
-                // masih 3 bola sebelum merge
+                // 3 bola sebelum merge
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 120.dp),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.Bottom
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    Ball(yOffset = bounce, xOffset = -offsetAnim, color = Color.White, scale = 1f)
-                    Ball(yOffset = bounce, xOffset = 0f, color = Color.White, scale = 1f)
-                    Ball(yOffset = bounce, xOffset = offsetAnim, color = Color.White, scale = 1f)
+//                    Ball(xOffset = -offsetAnim, color = Color.White, scale = mergeScale)
+//                    Ball(xOffset = 0f, color = Color.White, scale = mergeScale)
+//                    Ball(xOffset = offsetAnim, color = Color.White, scale = mergeScale)
                 }
             } else {
-                // sudah merge jadi 1 bola
-                Ball(
-                    yOffset = bounce + liftY,
-                    xOffset = 0f,
-                    color = Color.White,
-                    scale = mergeBallScale
-                )
-
+                // Sudah jadi 1 bola
+                Ball(xOffset = 0f, color = Color.White, scale = bigBallScale)
             }
         } else {
-            // expand bola jadi putih full
-            Ball(yOffset = liftY, xOffset = 0f, color = Color.White, scale = bigBallScale)
+            // Expand nutup layar
+            Ball(xOffset = 0f, color = Color.White, scale = bigBallScale)
         }
     }
 }
 
 @Composable
-fun Ball(yOffset: Float, xOffset: Float = 0f, color: Color, scale: Float) {
+fun Ball(xOffset: Float = 0f, color: Color, scale: Float) {
     Canvas(
         modifier = Modifier
             .size(20.dp)
-            .offset(x = xOffset.dp, y = yOffset.dp)
+            .offset(x = xOffset.dp, y = 0.dp)
             .scale(scale)
     ) {
         drawCircle(color = color)
@@ -214,7 +174,7 @@ fun Ball(yOffset: Float, xOffset: Float = 0f, color: Color, scale: Float) {
 
 // Custom Overshoot Easing
 fun OvershootEasing(tension: Float = 2f): Easing = Easing { fraction ->
-    val t = fraction - 1.0f
-    t * t * ((tension + 1) * t + tension) + 1.0f
+    val t = fraction - 1f
+    t * t * ((tension + 1) * t + tension) + 1f
 }
 

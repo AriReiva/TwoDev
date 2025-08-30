@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
                     }
                 ) { innerPadding ->
                     WebViewScreen(
-                        url = "http://192.168.1.7:5173/",
+                        url = "http://192.168.1.7:5173/auth/login",
                         modifier = Modifier.padding(innerPadding),
                         onFileChooser = { filePathCallback, intent ->
                             this.filePathCallback = filePathCallback
@@ -134,7 +134,7 @@ fun WebViewScreen(
 fun WebViewPreview() {
     LSPTheme {
         WebViewScreen(
-            url = "http://192.168.1.7:5173/",
+            url = "http://192.168.1.7:5173/auth/login",
             onFileChooser = { _, _ -> },
             onWebViewCreated = { }
         )
