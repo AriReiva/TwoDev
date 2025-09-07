@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
                     }
                 ) { innerPadding ->
                     WebViewScreen(
-                        url = "http://10.197.1.105:5173/auth/login",
+                        url = "http://192.168.1.7:5173/auth/login", // Ganti sesuai IP / URL lokalmu
                         modifier = Modifier.padding(innerPadding),
                         onFileChooser = { filePathCallback, intent ->
                             this.filePathCallback = filePathCallback
@@ -90,7 +90,29 @@ fun WebViewScreen(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
             WebView(context).apply {
-                webViewClient = WebViewClient()
+                // Handle PDF & external links
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                        val url = request?.url.toString()
+                        return if (url.endsWith(".pdf")) {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW)
+                                intent.setDataAndType(Uri.parse(url), "application/pdf")
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                fallback.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(fallback)
+                            }
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                }
+
+                // File chooser
                 webChromeClient = object : WebChromeClient() {
                     override fun onShowFileChooser(
                         webView: WebView?,
@@ -102,6 +124,21 @@ fun WebViewScreen(
                     }
                 }
 
+                // Download listener
+                setDownloadListener { url, _, _, mimetype, _ ->
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.setDataAndType(Uri.parse(url), mimetype)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        fallback.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(fallback)
+                    }
+                }
+
+                // WebView settings
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.allowFileAccess = true
@@ -114,7 +151,7 @@ fun WebViewScreen(
                 settings.cacheMode = WebSettings.LOAD_DEFAULT
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
-                // Nonaktifkan dark mode jika didukung
+                // Nonaktifkan dark mode jika tersedia
                 if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                     WebSettingsCompat.setForceDark(settings, WebSettingsCompat.FORCE_DARK_OFF)
                 }
@@ -131,7 +168,7 @@ fun WebViewScreen(
 fun WebViewPreview() {
     LSPTheme {
         WebViewScreen(
-            url = "http://10.197.1.105:5173/auth/login",
+            url = "http://192.168.1.7:5173/auth/login",
             onFileChooser = { _, _ -> },
             onWebViewCreated = { }
         )

@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -41,115 +43,58 @@ class SplashScreen : ComponentActivity() {
 
 @Composable
 fun SplashContent(onFinish: () -> Unit) {
-    var startLogo by remember { mutableStateOf(false) }
-    var fadeLogo by remember { mutableStateOf(false) }
-    var mergeBalls by remember { mutableStateOf(false) }
-    var expandBall by remember { mutableStateOf(false) }
+    var startAnimation by remember { mutableStateOf(false) }
 
-    // Logo
-    val logoScale by animateFloatAsState(
-        targetValue = if (startLogo) 1f else 0f,
-        animationSpec = tween(800, easing = OvershootEasing(2f)),
-        label = "logoScale"
-    )
-    val logoAlpha by animateFloatAsState(
-        targetValue = if (fadeLogo) 0f else 1f,
-        animationSpec = tween(600),
-        label = "logoAlpha"
+    // Animasi arc oranye (kecil, 90 derajat)
+    val orangeSweep by animateFloatAsState(
+        targetValue = if (startAnimation) 90f else 0f,
+        animationSpec = tween(1000, delayMillis = 0),
+        label = "orangeSweep"
     )
 
-    // Posisi bola kiri & kanan menuju tengah
-    val offsetAnim by animateFloatAsState(
-        targetValue = if (mergeBalls) 0f else 60f,
-        animationSpec = tween(900, easing = EaseInOut),
-        label = "offsetAnim"
+    // Animasi arc biru (besar, 180 derajat)
+    val blueSweep by animateFloatAsState(
+        targetValue = if (startAnimation) 180f else 0f,
+        animationSpec = tween(1200, delayMillis = 1000),
+        label = "blueSweep"
     )
 
-//    // Scale kecil waktu merge → kasih efek “menyatu”
-//    val mergeScale by animateFloatAsState(
-//        targetValue = if (mergeBalls) 1.5f else 1f,
-//        animationSpec = tween(00, easing = EaseInOut),
-//        label = "mergeScale"
-//    )
-
-    // Scale bola final ketika expand
-    val bigBallScale by animateFloatAsState(
-        targetValue = if (expandBall) 80f else 1f,
-        animationSpec = tween(1500, easing = FastOutSlowInEasing),
-        label = "bigBallScale"
-    )
-
-    // Timeline
     LaunchedEffect(Unit) {
-        startLogo = true
-        delay(1200)
-        fadeLogo = true
-        delay(600)
-        mergeBalls = true
-        delay(1000)
-        expandBall = true
-        delay(2000)
+        startAnimation = true
+        delay(3000)
         onFinish()
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Color(0xFFff7e5f)
-            ),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Logo
-        Image(
-            painter = painterResource(id = R.drawable.logo_pth_lsp),
-            contentDescription = "Logo LSP",
-            modifier = Modifier
-                .size(200.dp)
-                .scale(logoScale)
-                .alpha(logoAlpha)
-        )
+        Canvas(modifier = Modifier.size(250.dp)) {
+            val strokeWidth = 40f
 
-        // Bola
-        if (!expandBall) {
-            if (!mergeBalls) {
-                // 3 bola sebelum merge
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 120.dp),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-//                    Ball(xOffset = -offsetAnim, color = Color.White, scale = mergeScale)
-//                    Ball(xOffset = 0f, color = Color.White, scale = mergeScale)
-//                    Ball(xOffset = offsetAnim, color = Color.White, scale = mergeScale)
-                }
-            } else {
-                // Sudah jadi 1 bola
-                Ball(xOffset = 0f, color = Color.White, scale = bigBallScale)
-            }
-        } else {
-            // Expand nutup layar
-            Ball(xOffset = 0f, color = Color.White, scale = bigBallScale)
+            // Arc Oranye (kecil di atas kiri)
+            drawArc(
+                color = Color(0xFFFF6F00),
+                startAngle = 360f,
+                sweepAngle = orangeSweep,
+                useCenter = false,
+                topLeft = Offset(size.width / 2f - 210f, size.height / 2f - 240f),
+                size = Size(240f, 240f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
+            )
+
+            // Arc Biru (besar di kanan bawah)
+            drawArc(
+                color = Color(0xFF0288D1),
+                startAngle = 90f,
+                sweepAngle = blueSweep,
+                useCenter = false,
+                topLeft = Offset(size.width / 2f - 10f, size.height / 2f - 10f),
+                size = Size(240f, 240f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
+            )
         }
     }
 }
 
-@Composable
-fun Ball(xOffset: Float = 0f, color: Color, scale: Float) {
-    Canvas(
-        modifier = Modifier
-            .size(20.dp)
-            .offset(x = xOffset.dp, y = 0.dp)
-            .scale(scale)
-    ) {
-        drawCircle(color = color)
-    }
-}
-
-// Custom Overshoot Easing
-fun OvershootEasing(tension: Float = 2f): Easing = Easing { fraction ->
-    val t = fraction - 1f
-    t * t * ((tension + 1) * t + tension) + 1f
-}
 
