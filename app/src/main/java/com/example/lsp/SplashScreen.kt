@@ -48,15 +48,22 @@ fun SplashContent(onFinish: () -> Unit) {
     // Animasi arc oranye (kecil, 90 derajat)
     val orangeSweep by animateFloatAsState(
         targetValue = if (startAnimation) 90f else 0f,
-        animationSpec = tween(1000, delayMillis = 0),
+        animationSpec = tween(2000, delayMillis = 0),
         label = "orangeSweep"
     )
 
     // Animasi arc biru (besar, 180 derajat)
     val blueSweep by animateFloatAsState(
         targetValue = if (startAnimation) 180f else 0f,
-        animationSpec = tween(1200, delayMillis = 1000),
+        animationSpec = tween(2000, delayMillis = 1000),
         label = "blueSweep"
+    )
+
+    // Animasi scale
+    val scale by animateFloatAsState(
+        targetValue = if (startAnimation) 1.1f else 0.8f,
+        animationSpec = tween(2000, easing = FastOutSlowInEasing),
+        label = "scaleAnim"
     )
 
     LaunchedEffect(Unit) {
@@ -69,7 +76,7 @@ fun SplashContent(onFinish: () -> Unit) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(250.dp)) {
+        Canvas(modifier = Modifier.size(250.dp).scale(scale)) {
             val strokeWidth = 40f
 
             // Arc Oranye (kecil di atas kiri)
