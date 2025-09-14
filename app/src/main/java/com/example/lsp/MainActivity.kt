@@ -9,15 +9,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -46,26 +52,60 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LSPTheme {
+//                Scaffold(
+//                    modifier = Modifier.fillMaxSize(),
+//                    floatingActionButton = {
+//                        FloatingActionButton(onClick = { webView?.reload() },
+//                                modifier = Modifier.padding(bottom = 40.dp) ) {
+//                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+//
+//                        }
+//                    }
+//                ) { innerPadding ->
+//                    WebViewScreen(
+//                        url = "http://10.197.1.105:5173/auth/login", // Ganti sesuai IP / URL lokalmu
+//                        modifier = Modifier.padding(innerPadding),
+//                        onFileChooser = { filePathCallback, intent ->
+//                            this.filePathCallback = filePathCallback
+//                            fileChooserLauncher.launch(intent)
+//                        },
+//                        onWebViewCreated = { wv -> webView = wv }
+//                    )
+//                }
                 Scaffold(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White), // default putih
                     floatingActionButton = {
-                        FloatingActionButton(onClick = { webView?.reload() },
-                                modifier = Modifier.padding(bottom = 40.dp) ) {
+                        FloatingActionButton(onClick = { webView?.reload() }) {
                             Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-
                         }
                     }
                 ) { innerPadding ->
-                    WebViewScreen(
-                        url = "http://10.197.1.105:5173/auth/login", // Ganti sesuai IP / URL lokalmu
-                        modifier = Modifier.padding(innerPadding),
-                        onFileChooser = { filePathCallback, intent ->
-                            this.filePathCallback = filePathCallback
-                            fileChooserLauncher.launch(intent)
-                        },
-                        onWebViewCreated = { wv -> webView = wv }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .background(Color.White)
+                    ) {
+                        WebViewScreen(
+                            url = "http://10.197.1.105:5173/auth/login",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(bottom = 60.dp)
+                                .background(Color.White),
+                            onFileChooser = { callback, intent ->
+                                filePathCallback = callback
+                                fileChooserLauncher.launch(intent)
+                            },
+                            onWebViewCreated = { wv ->
+                                webView = wv
+                                wv.setBackgroundColor(android.graphics.Color.WHITE) // biar WebView nggak transparan
+                            }
+                        )
+                    }
                 }
+
             }
         }
     }
@@ -93,6 +133,7 @@ fun WebViewScreen(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
             WebView(context).apply {
+                setBackgroundColor(android.graphics.Color.WHITE)
                 // Handle PDF & external links
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {

@@ -3,6 +3,7 @@
     <!-- Tema utama buat activity lain -->
     <style name="Theme.LSP" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/white</item>
+
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/putih</item>
     </style>
 </resources>
