@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
@@ -48,8 +49,10 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     floatingActionButton = {
-                        FloatingActionButton(onClick = { webView?.reload() }) {
+                        FloatingActionButton(onClick = { webView?.reload() },
+                                modifier = Modifier.padding(bottom = 40.dp) ) {
                             Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+
                         }
                     }
                 ) { innerPadding ->
