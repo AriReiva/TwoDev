@@ -5,7 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.webkit.*
+import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.example.lsp.ui.theme.LSPTheme
@@ -52,60 +55,26 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LSPTheme {
-//                Scaffold(
-//                    modifier = Modifier.fillMaxSize(),
-//                    floatingActionButton = {
-//                        FloatingActionButton(onClick = { webView?.reload() },
-//                                modifier = Modifier.padding(bottom = 40.dp) ) {
-//                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-//
-//                        }
-//                    }
-//                ) { innerPadding ->
-//                    WebViewScreen(
-//                        url = "http://10.197.1.105:5173/auth/login", // Ganti sesuai IP / URL lokalmu
-//                        modifier = Modifier.padding(innerPadding),
-//                        onFileChooser = { filePathCallback, intent ->
-//                            this.filePathCallback = filePathCallback
-//                            fileChooserLauncher.launch(intent)
-//                        },
-//                        onWebViewCreated = { wv -> webView = wv }
-//                    )
-//                }
-                Scaffold(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White), // default putih
-                    floatingActionButton = {
-                        FloatingActionButton(onClick = { webView?.reload() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+
+                val webViewState = remember { mutableStateOf<WebView?>(null) }
+                WebViewScreen(
+                    url = "http://10.197.1.105:5173/auth/login",
+                    modifier = Modifier.fillMaxSize(),
+                    webViewState = webViewState,
+                    onFileChooser = { callback, intent ->
+                        filePathCallback = callback
+                        fileChooserLauncher.launch(intent)
+                    }
+                )
+                BackHandler(enabled = true) {
+                    webViewState.value?.let { webView ->
+                        if (webView.canGoBack()) {
+                            webView.goBack()
+                        } else {
+                            finish() // keluar activity kalau tidak bisa back lagi
                         }
                     }
-                ) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .background(Color.White)
-                    ) {
-                        WebViewScreen(
-                            url = "http://10.197.1.105:5173/auth/login",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(bottom = 60.dp)
-                                .background(Color.White),
-                            onFileChooser = { callback, intent ->
-                                filePathCallback = callback
-                                fileChooserLauncher.launch(intent)
-                            },
-                            onWebViewCreated = { wv ->
-                                webView = wv
-                                wv.setBackgroundColor(android.graphics.Color.WHITE) // biar WebView nggak transparan
-                            }
-                        )
-                    }
                 }
-
             }
         }
     }
@@ -126,95 +95,58 @@ class MainActivity : ComponentActivity() {
 fun WebViewScreen(
     url: String,
     modifier: Modifier = Modifier,
-    onFileChooser: (ValueCallback<Array<Uri>>, Intent) -> Unit,
-    onWebViewCreated: (WebView) -> Unit = {}
+    webViewState: MutableState<WebView?>,
+    onFileChooser: (ValueCallback<Array<Uri>>, Intent) -> Unit
 ) {
-    AndroidView(
-        modifier = modifier.fillMaxSize(),
-        factory = { context ->
-            WebView(context).apply {
-                setBackgroundColor(android.graphics.Color.WHITE)
-                // Handle PDF & external links
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                        val url = request?.url.toString()
-                        return if (url.endsWith(".pdf")) {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW)
-                                intent.setDataAndType(Uri.parse(url), "application/pdf")
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                fallback.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                context.startActivity(fallback)
-                            }
-                            true
-                        } else {
-                            false
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                val swipeRefreshLayout = SwipeRefreshLayout(context)
+
+                val webView = WebView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT
+                    )
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            isRefreshing = false
+                            swipeRefreshLayout.isRefreshing = false
                         }
                     }
-                }
 
-                // File chooser
-                webChromeClient = object : WebChromeClient() {
-                    override fun onShowFileChooser(
-                        webView: WebView?,
-                        filePathCallback: ValueCallback<Array<Uri>>,
-                        fileChooserParams: FileChooserParams
-                    ): Boolean {
-                        onFileChooser(filePathCallback, fileChooserParams.createIntent())
-                        return true
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onShowFileChooser(
+                            webView: WebView?,
+                            filePathCallback: ValueCallback<Array<Uri>>,
+                            fileChooserParams: FileChooserParams
+                        ): Boolean {
+                            onFileChooser(filePathCallback, fileChooserParams.createIntent())
+                            return true
+                        }
                     }
+
+                    setBackgroundColor(android.graphics.Color.WHITE)
+                    loadUrl(url)
                 }
 
-                // Download listener
-                setDownloadListener { url, _, _, mimetype, _ ->
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW)
-                        intent.setDataAndType(Uri.parse(url), mimetype)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        fallback.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.startActivity(fallback)
-                    }
+                webViewState.value = webView
+
+                swipeRefreshLayout.addView(webView)
+                swipeRefreshLayout.setOnRefreshListener {
+                    isRefreshing = true
+                    webView.reload()
                 }
 
-                // WebView settings
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.allowFileAccess = true
-                settings.allowContentAccess = true
-                settings.useWideViewPort = true
-                settings.loadWithOverviewMode = true
-                settings.setSupportZoom(false)
-                settings.builtInZoomControls = false
-                settings.displayZoomControls = false
-                settings.cacheMode = WebSettings.LOAD_DEFAULT
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-
-                // Nonaktifkan dark mode jika tersedia
-                if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-                    WebSettingsCompat.setForceDark(settings, WebSettingsCompat.FORCE_DARK_OFF)
-                }
-
-                loadUrl(url)
-                onWebViewCreated(this)
+                swipeRefreshLayout
             }
-        }
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun WebViewPreview() {
-    LSPTheme {
-        WebViewScreen(
-            url = "http://10.197.1.105:5173/auth/login",
-            onFileChooser = { _, _ -> },
-            onWebViewCreated = { }
         )
     }
 }
