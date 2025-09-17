@@ -3,7 +3,7 @@
     <domain-config cleartextTrafficPermitted="true">
         <!-- Ganti sesuai IP server FE/BE -->
         <domain includeSubdomains="true">192.168.1.7</domain>
-        <domain includeSubdomains="true">10.197.1.105</domain>
+        <domain includeSubdomains="true">10.240.32.105</domain>
         <domain includeSubdomains="true">localhost</domain>
     </domain-config>
 </network-security-config>

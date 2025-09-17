@@ -1,6 +1,7 @@
 package com.example.lsp
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -11,33 +12,17 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import androidx.webkit.WebSettingsCompat
-import androidx.webkit.WebViewFeature
 import com.example.lsp.ui.theme.LSPTheme
 
 class MainActivity : ComponentActivity() {
 
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
-    private var webView: WebView? = null
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -55,10 +40,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LSPTheme {
-
                 val webViewState = remember { mutableStateOf<WebView?>(null) }
+
                 WebViewScreen(
-                    url = "http://10.197.1.105:5173/auth/login",
+                    url = "https://asessment24.site/twodev-fe/auth/login",
                     modifier = Modifier.fillMaxSize(),
                     webViewState = webViewState,
                     onFileChooser = { callback, intent ->
@@ -66,27 +51,18 @@ class MainActivity : ComponentActivity() {
                         fileChooserLauncher.launch(intent)
                     }
                 )
+
                 BackHandler(enabled = true) {
                     webViewState.value?.let { webView ->
                         if (webView.canGoBack()) {
                             webView.goBack()
                         } else {
-                            finish() // keluar activity kalau tidak bisa back lagi
+                            finish()
                         }
                     }
                 }
             }
         }
-    }
-
-    override fun onBackPressed() {
-        webView?.let {
-            if (it.canGoBack()) {
-                it.goBack()
-            } else {
-                super.onBackPressed()
-            }
-        } ?: super.onBackPressed()
     }
 }
 
@@ -114,13 +90,41 @@ fun WebViewScreen(
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
 
+                    // 🔹 WebViewClient intercept PDF
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView?, url: String?) {
                             super.onPageFinished(view, url)
+                            // Pull-to-refresh selesai
                             isRefreshing = false
                             swipeRefreshLayout.isRefreshing = false
                         }
+
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            val url = request?.url.toString()
+
+                            // Jika PDF, pakai intent Android
+                            if (url.endsWith(".pdf")) {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW)
+                                    intent.setDataAndType(Uri.parse(url), "application/pdf")
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    fallback.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                    context.startActivity(fallback)
+                                }
+                                return true
+                            }
+
+                            // Kalau bukan PDF, biarkan WebView yang load
+                            return false
+                        }
                     }
+
 
                     webChromeClient = object : WebChromeClient() {
                         override fun onShowFileChooser(
